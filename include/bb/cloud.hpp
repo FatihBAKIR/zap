@@ -50,4 +50,10 @@ namespace bb
 	};
 
 	using client_id_t = std::variant<std::monostate, user_id_t, device_id_t>;
+
+	struct registrar;
+	struct call_info
+	{
+		client_id_t client;
+	};
 }

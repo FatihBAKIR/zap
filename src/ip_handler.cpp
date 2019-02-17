@@ -5,7 +5,7 @@
 #include <ip_addr_generated.h>
 #include <bb/flatbuf.hpp>
 
-static void handle_ip(const bb::cloud::IPAddr* ip, const bb::client_id_t & from)
+static void handle_ip(const bb::cloud::IPAddr* ip)
 {
 	std::cout << ip->gw_id() << " : " << ip->addr()->str() << '\n';
 }
