@@ -10,6 +10,8 @@
 
 #include <req_generated.h>
 
+#include <boost/process/env.hpp>
+
 using boost::asio::ip::udp;
 
 class server
@@ -56,7 +58,8 @@ int main(int argc, char** argv)
 
     server s(io, 9993);
 
-    dll::shared_library lib(argv[1]);
+    auto env = boost::this_process::environment();
+    dll::shared_library lib(argc > 1 ? argv[1] : env["ZAP_ENTRY"].to_string().c_str());
 
     s.lib = std::move(lib);
     s.reg = &s.lib.get<bb::registrar>("registry");

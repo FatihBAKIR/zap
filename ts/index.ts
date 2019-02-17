@@ -39,7 +39,7 @@ const buf = make_request("handle_ip", "", make_ip(2, "192.168.2.20"));
 console.log(buf.length);
 
 const client = dgram.createSocket('udp4');
-client.send(buf, 9993, "localhost", (err, bytes) => {
+client.send(buf, 9993, "192.168.2.17", (err, bytes) => {
     client.close();
     if (err)
     {
