@@ -12,7 +12,12 @@
 
 #include <boost/process.hpp>
 
+#include <spdlog/spdlog.h>
+#include "spdlog/sinks/stdout_color_sinks.h"
+
 using boost::asio::ip::udp;
+
+bb::client_id_t authenticate(const std::string& token);
 
 class server
 {
@@ -20,6 +25,7 @@ public:
     server(boost::asio::io_context& io_context, short port)
             : socket_(io_context, udp::endpoint(udp::v4(), port))
     {
+        auto req_log = spdlog::stderr_color_mt("req-log");
         do_receive();
     }
 
@@ -35,8 +41,20 @@ public:
 
                         auto body = tos::span<const uint8_t>(req->body()->data(), req->body()->size());
 
-                        bb::client_id_t id = bb::user_id_t{1234};
-                        reg->post(req->handler()->c_str(), body, id);
+                        auto token = req->token()->str();
+
+                        auto id = authenticate(token);
+
+                        auto handler = req->handler()->c_str();
+
+                        spdlog::get("req-log")->info("Got request on \"{}\" with body size {}", handler, body.size());
+
+                        auto res = reg->post(handler, body, id);
+
+                        if (!res)
+                        {
+                            spdlog::get("req-log")->info("No handler was found for the last request");
+                        }
                     }
                     do_receive();
                 });
@@ -64,7 +82,9 @@ int main(int argc, char** argv)
     s.lib = std::move(lib);
     s.reg = &s.lib.get<bb::registrar>("registry");
 
-    std::cerr << "Zap running in port 9993\n";
+    auto log = spdlog::stderr_color_mt("info");
+
+    log->info("Zap running in port 9993");
     
     io.run();
 }

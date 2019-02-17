@@ -34,12 +34,14 @@ function make_request(handler: string, token: string, body: Uint8Array) : Uint8A
     return builder.asUint8Array();
 }
 
-const buf = make_request("handle_ip", "", make_ip(2, "192.168.2.20"));
+const tok = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjowLCJvYmoiOjEsInBlcm0iOjAsImlhdCI6MTU1MDM4NzE1MywiZXhwIjoxNTUwNDczNTUzfQ.VRPrEwnTtpwshaw-lif-kUpGVmMicgFqeW8DjTTq9QE";
+
+const buf = make_request("handle_ip", tok, make_ip(2, "192.168.2.20"));
 
 console.log(buf.length);
 
 const client = dgram.createSocket('udp4');
-client.send(buf, 9993, "192.168.2.17", (err, bytes) => {
+client.send(buf, 9993, "localhost", (err, bytes) => {
     client.close();
     if (err)
     {

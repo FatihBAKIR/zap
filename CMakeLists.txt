@@ -7,6 +7,7 @@ conan_basic_setup()
 
 set(CMAKE_MODULE_PATH ${CONAN_CMAKE_MODULE_PATH} ${CMAKE_MODULE_PATH})
 conan_set_find_paths()
+conan_define_targets()
 
 find_package(Flatbuffers REQUIRED)
 find_package(FlatBuffers REQUIRED)
@@ -24,12 +25,14 @@ FLATBUFFERS_GENERATE_C_HEADERS(req_headers schemas/req.fbs)
 
 add_library (ip_handler SHARED src/ip_handler.cpp ${foo_OUTPUTS})
 target_link_libraries(ip_handler PUBLIC zap)
-target_link_libraries(ip_handler PUBLIC ${CONAN_LIBS})
+target_link_libraries(ip_handler PUBLIC CONAN_PKG::flatbuffers)
 set_target_properties(ip_handler PROPERTIES CXX_VISIBILITY_PRESET hidden)
 set_target_properties(ip_handler PROPERTIES C_VISIBILITY_PRESET hidden)
 target_compile_definitions(ip_handler PUBLIC _GLIBCXX_USE_CXX11_ABI=0)
 
-add_executable (zaprt src/zap-rt.cpp ${req_headers_OUTPUTS})
-target_link_libraries (zaprt PUBLIC zap ${Boost_LIBRARIES} dl pthread)
+add_subdirectory(3rd_party/cpp-jwt)
+
+add_executable (zaprt src/zap-rt.cpp ${req_headers_OUTPUTS} src/jwt-auth.cpp)
+target_link_libraries (zaprt PUBLIC zap pthread ${Boost_LIBRARIES} dl cpp-jwt pthread ${CONAN_TARGETS})
 target_include_directories (zaprt PUBLIC ${Boost_INCLUDE_DIRS})
 target_compile_definitions(zaprt PUBLIC _GLIBCXX_USE_CXX11_ABI=0)
