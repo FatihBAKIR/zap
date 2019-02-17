@@ -138,5 +138,3 @@ namespace bb
 		std::map<std::tuple<std::string, size_t, size_t>, fun> m_handlers;
 	};
 }
-
-#define ZAP_EXPORT __attribute__((visibility("default")))

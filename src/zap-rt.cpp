@@ -81,6 +81,14 @@ public:
                                 req_log->info("No handler was found for the last request");
                             }
 
+                            if (ci.res)
+                            {
+                                ci.log->info("Response: {}", ci.res.get());
+                                socket_.async_send_to(boost::asio::buffer(ci.res.get()), ep, [](boost::system::error_code, std::size_t){
+
+                                });
+                            }
+
                             req_log->info("Request handled successfully");
                         }
                         catch (std::exception& err)

@@ -18,10 +18,9 @@ namespace bb
             using Traits = function_traits<FunT>;
             using FBType = std::remove_const_t<std::remove_pointer_t<T>>;
 
-
             if constexpr (Traits::arity == 2)
             {
-                return [=](tos::bytes s, call_info ci)
+                return [=](tos::bytes s, call_info& ci)
                 {
                     auto ver = flatbuffers::Verifier(s.data(), s.size());
                     auto ok = ver.VerifyBuffer<FBType>();
@@ -34,7 +33,7 @@ namespace bb
             }
             else if constexpr (Traits::arity == 1)
             {
-                return [=](tos::bytes s, call_info)
+                return [=](tos::bytes s, call_info&)
                 {
                     auto ver = flatbuffers::Verifier(s.data(), s.size());
                     auto ok = ver.VerifyBuffer<FBType>();
