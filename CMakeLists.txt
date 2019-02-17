@@ -12,9 +12,10 @@ conan_define_targets()
 find_package(Flatbuffers REQUIRED)
 find_package(FlatBuffers REQUIRED)
 
-add_library(zap src/zap.cpp include/bb/zap.hpp include/bb/span.hpp include/bb/flatbuf.hpp include/bb/function_traits.hpp)
+add_library(zap src/zap.cpp include/bb/zap.hpp include/bb/span.hpp include/bb/flatbuf.hpp include/bb/function_traits.hpp include/bb/handler.hpp)
 target_compile_features(zap PUBLIC cxx_std_17)
 target_include_directories(zap PUBLIC "include")
+target_link_libraries(zap PUBLIC CONAN_PKG::spdlog)
 
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 

@@ -6,6 +6,7 @@
 #include <flatbuffers/flatbuffers.h>
 #include <bb/span.hpp>
 #include <bb/function_traits.hpp>
+#include "handler.hpp"
 
 namespace bb
 {
@@ -17,18 +18,30 @@ namespace bb
             using Traits = function_traits<FunT>;
             using FBType = std::remove_const_t<std::remove_pointer_t<T>>;
 
+
             if constexpr (Traits::arity == 2)
             {
-                return [=](tos::bytes s, client_id_t dev_id)
+                return [=](tos::bytes s, call_info ci)
                 {
-                    fn(flatbuffers::GetRoot<FBType>(s.data()), dev_id);
+                    auto ver = flatbuffers::Verifier(s.data(), s.size());
+                    auto ok = ver.VerifyBuffer<FBType>();
+
+                    if (ok)
+                    {
+                        fn(flatbuffers::GetRoot<FBType>(s.data()), ci);
+                    }
                 };
             }
             else if constexpr (Traits::arity == 1)
             {
-                return [=](tos::bytes s, client_id_t)
+                return [=](tos::bytes s, call_info)
                 {
-                    fn(flatbuffers::GetRoot<FBType>(s.data()));
+                    auto ver = flatbuffers::Verifier(s.data(), s.size());
+                    auto ok = ver.VerifyBuffer<FBType>();
+
+                    if (ok) {
+                        fn(flatbuffers::GetRoot<FBType>(s.data()));
+                    }
                 };
             }
         }

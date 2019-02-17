@@ -15,6 +15,9 @@
 #include <spdlog/spdlog.h>
 #include "spdlog/sinks/stdout_color_sinks.h"
 
+#include <thread>
+#include <bb/handler.hpp>
+
 using boost::asio::ip::udp;
 
 bb::client_id_t authenticate(const std::string& token);
@@ -31,31 +34,61 @@ public:
 
     void do_receive()
     {
-        socket_.async_receive(
-                boost::asio::buffer(data_, max_length),
+        socket_.async_receive_from(
+                boost::asio::buffer(data_, max_length), ep,
                 [this](boost::system::error_code ec, std::size_t bytes_recvd)
                 {
                     if (!ec && bytes_recvd > 0)
                     {
                         auto req = flatbuffers::GetRoot<bb::cloud::Request>(data_);
+                        auto ver = flatbuffers::Verifier(data_, bytes_recvd);
+                        bool ok = bb::cloud::VerifyRequestBuffer(ver);
+
+                        auto remote_addr = ep.address().to_string();
+                        auto remote_port = ep.port();
+
+                        auto req_log = spdlog::get("req-log");
+                        if (!ok)
+                        {
+                            req_log->error("Received garbage from {}:{}", remote_addr, remote_port);
+                            goto end;
+                        }
 
                         auto body = tos::span<const uint8_t>(req->body()->data(), req->body()->size());
 
                         auto token = req->token()->str();
 
-                        auto id = authenticate(token);
-
                         auto handler = req->handler()->c_str();
 
-                        spdlog::get("req-log")->info("Got request on \"{}\" with body size {}", handler, body.size());
+                        req_log->info(
+                                "Got request on \"{}\" with body size {} from {}:{}",
+                                handler, body.size(), remote_addr, remote_port);
 
-                        auto res = reg->post(handler, body, id);
-
-                        if (!res)
+                        try
                         {
-                            spdlog::get("req-log")->info("No handler was found for the last request");
+                            auto id = authenticate(token);
+
+                            auto fun_log = spdlog::get(handler);
+
+                            bb::call_info ci;
+                            ci.client = id;
+                            ci.log = fun_log ? fun_log : spdlog::stdout_color_mt(handler);
+
+                            auto res = reg->post(handler, body, ci);
+
+                            if (!res)
+                            {
+                                req_log->info("No handler was found for the last request");
+                            }
+
+                            req_log->info("Request handled successfully");
+                        }
+                        catch (std::exception& err)
+                        {
+                            req_log->error("Handling failed: {}", err.what());
                         }
                     }
+                    end:
                     do_receive();
                 });
     }
@@ -65,6 +98,7 @@ public:
 private:
     udp::socket socket_;
     enum { max_length = 1024 };
+    udp::endpoint ep;
     uint8_t data_[max_length];
 };
 
@@ -82,9 +116,23 @@ int main(int argc, char** argv)
     s.lib = std::move(lib);
     s.reg = &s.lib.get<bb::registrar>("registry");
 
-    auto log = spdlog::stderr_color_mt("info");
+    auto log = spdlog::stderr_color_mt("zap-system");
 
     log->info("Zap running in port 9993");
-    
+
+    std::vector<std::thread> threads(std::thread::hardware_concurrency());
+
+    for (auto& t : threads)
+    {
+        t = std::thread([&]{
+            io.run();
+        });
+    }
+
     io.run();
+
+    for (auto& t : threads)
+    {
+        t.join();
+    }
 }
