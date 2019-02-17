@@ -2,6 +2,7 @@ namespace bb.cloud;
 
 table IPAddr
 {
+    gw_id: uint32;
     addr: string;
 }
 

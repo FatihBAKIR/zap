@@ -1,0 +1,16 @@
+{
+  "name": "ts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/flatbuffers": "^1.9.1",
+    "@types/node": "^11.9.4",
+    "flatbuffers": "^1.10.2"
+  }
+}

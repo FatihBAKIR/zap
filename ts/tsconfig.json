@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "outDir": "build",
+        "allowJs": false,
+        "strict": true,
+        "lib": ["es2018"]
+    },
+    "files": [
+        "index.ts"
+    ]
+}

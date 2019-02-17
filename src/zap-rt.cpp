@@ -3,36 +3,63 @@
 #include <iostream>
 
 #include <flatbuffers/flatbuffers.h>
-#include <ip_addr_generated.h>
 #include <vector>
 #include <bb/cloud.hpp>
 
-std::vector<uint8_t> get_ip_buf()
+#include <boost/asio.hpp>
+
+#include <req_generated.h>
+
+using boost::asio::ip::udp;
+
+class server
 {
-    flatbuffers::FlatBufferBuilder builder(1024);
+public:
+    server(boost::asio::io_context& io_context, short port)
+            : socket_(io_context, udp::endpoint(udp::v4(), port))
+    {
+        do_receive();
+    }
 
-    auto str = builder.CreateString("192.168.2.19");
-    bb::cloud::IPAddrBuilder build(builder);
-    build.add_addr(str);
-    auto addr = build.Finish();
-    builder.Finish(addr);
+    void do_receive()
+    {
+        socket_.async_receive(
+                boost::asio::buffer(data_, max_length),
+                [this](boost::system::error_code ec, std::size_t bytes_recvd)
+                {
+                    if (!ec && bytes_recvd > 0)
+                    {
+                        auto req = flatbuffers::GetRoot<bb::cloud::Request>(data_);
 
-    return std::vector<uint8_t>(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
-}
+                        auto body = tos::span<const uint8_t>(req->body()->data(), req->body()->size());
 
-void run(bb::registrar& h)
-{
-	auto buf = get_ip_buf();
-    auto ip = flatbuffers::GetRoot<bb::cloud::IPAddr>(buf.data());
+                        bb::client_id_t id = bb::user_id_t{1234};
+                        reg->post(req->handler()->c_str(), body, id);
+                    }
+                    do_receive();
+                });
+    }
 
-    bb::device_id_t id(1234);
-    h.post("handle_ip", *ip, id);
-}
-
-bb::registrar bb_register(bb::registrar);
+    boost::dll::shared_library lib;
+    bb::registrar* reg;
+private:
+    udp::socket socket_;
+    enum { max_length = 1024 };
+    uint8_t data_[max_length];
+};
 
 int main(int argc, char** argv)
 {
-    auto h = bb_register({});
-    run(h);
+    using namespace boost;
+
+    asio::io_context io;
+
+    server s(io, 9993);
+
+    dll::shared_library lib(argv[1]);
+
+    s.lib = std::move(lib);
+    s.reg = &s.lib.get<bb::registrar>("registry");
+
+    io.run();
 }

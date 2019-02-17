@@ -1,9 +1,15 @@
 #pragma once
 
 #include <cstdint>
+#include <variant>
 
 namespace bb
 {
+	struct user_id_t
+	{
+		uint32_t user_id;
+	};
+
 	struct org_id_t
 	{
 		uint32_t org_id;
@@ -42,4 +48,6 @@ namespace bb
 			uint64_t unique_id;
 		};
 	};
+
+	using client_id_t = std::variant<std::monostate, user_id_t, device_id_t>;
 }

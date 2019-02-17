@@ -1,0 +1,10 @@
+namespace bb.cloud;
+
+table Request
+{
+    token: string;
+    handler: string;
+    body: [ubyte];
+}
+
+root_type Request;

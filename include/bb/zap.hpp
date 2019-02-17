@@ -2,7 +2,8 @@
 
 #include <map>
 #include <functional>
-
+#include "span.hpp"
+#include <bb/function_traits.hpp>
 namespace bb
 {
 	namespace detail
@@ -48,11 +49,37 @@ namespace bb
 		constexpr inline put_t<ArgTs> put{};
 	}
 
+	template <class T>
+    struct deser_traits
+    {
+	    using type = T;
+    };
+
+	template <class T>
+    typename deser_traits<T>::type
+    deser(tos::span<const uint8_t>);
+
+	template <class T>
+    typename deser_traits<T>::type
+    deser(typename deser_traits<T>::type x)
+    {
+        return x;
+    }
+
+	template <class FunT>
+	struct handler
+	{
+		const char* name;
+		FunT fun;
+	};
+
+	template <class FunT>
+	handler(const char*, FunT) -> handler<FunT>;
+
 	class registrar
 	{
-	public:
 		template <class... ArgTs, class FuncT>
-		registrar& attach(const char* name, FuncT&& f)
+		registrar& do_attach(const char* name, type_list<ArgTs...>, FuncT&& f)
 		{
 			using FunT = std::remove_reference_t<std::decay_t<FuncT>>;
 
@@ -70,6 +97,20 @@ namespace bb
 			m_handlers.emplace(key, fn);
 
 			return *this;
+		}
+
+	public:
+		template <class FuncT>
+		registrar& attach(const char* name, FuncT&& f)
+		{
+			using ArgTs = typename bb::function_traits<std::remove_reference_t <FuncT>>::arg_ts;
+			return do_attach(name, ArgTs{}, std::forward<FuncT>(f));
+		}
+
+		template <class FuncT>
+		registrar& attach(const handler<FuncT>& i)
+		{
+			return attach(i.name, i.fun);
 		}
 
 		template <class... ArgTs>
@@ -93,8 +134,6 @@ namespace bb
 			void* data;
 			void(*fp)(void*, void*);
 		};
-
-		std::map<std::string, std::map<std::tuple<size_t, size_t>, fun>> m_woah;
 
 		std::map<std::tuple<std::string, size_t, size_t>, fun> m_handlers;
 	};
