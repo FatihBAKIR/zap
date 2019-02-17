@@ -1,0 +1,7 @@
+[requires]
+boost/1.69.0@conan/stable
+msgpack/3.1.1@bincrafters/stable
+flatbuffers/1.10.0@google/stable
+
+[generators]
+cmake

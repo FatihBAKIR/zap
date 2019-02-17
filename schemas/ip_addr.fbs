@@ -1,0 +1,8 @@
+namespace bb.cloud;
+
+table IPAddr
+{
+    addr: string;
+}
+
+root_type IPAddr;

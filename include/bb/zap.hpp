@@ -51,11 +51,9 @@ namespace bb
 	class registrar
 	{
 	public:
-		template <template<class...> class EventT, class... ArgTs, class FuncT>
-		registrar& attach(const EventT<ArgTs...>& e, FuncT&& f)
+		template <class... ArgTs, class FuncT>
+		registrar& attach(const char* name, FuncT&& f)
 		{
-			static_assert(std::is_base_of_v<detail::event_base, EventT<ArgTs...>>, "events must inherit from event_base!");
-
 			using FunT = std::remove_reference_t<std::decay_t<FuncT>>;
 
 			fun fn;
@@ -68,18 +66,18 @@ namespace bb
 				std::apply(h, a);
 			};
 
-			auto key = std::tuple<int, size_t, size_t>{ e.event_id, sizeof...(ArgTs), (0 + ... + detail::type_id<ArgTs>()) };
+			auto key = std::tuple<std::string, size_t, size_t>{ name, sizeof...(ArgTs), (0 + ... + detail::type_id<ArgTs>()) };
 			m_handlers.emplace(key, fn);
 
 			return *this;
 		}
 
-		template <template<class...> class EventT, class... ArgTs>
-		bool post(const EventT<ArgTs...>& e, ArgTs&&... args)
+		template <class... ArgTs>
+		bool post(const char* name, ArgTs&&... args)
 		{
-			static_assert(std::is_base_of_v<detail::event_base, EventT<ArgTs...>>, "events must inherit from event_base!");
-
-			auto key = std::tuple<int, size_t, size_t>{ e.event_id, sizeof...(ArgTs), (0 + ... + detail::type_id<ArgTs>()) };
+			auto key = std::tuple<std::string, size_t, size_t>{
+			    name, sizeof...(ArgTs), (0 + ... + detail::type_id<ArgTs>())
+			};
 
 			auto it = m_handlers.find(key);
 			if (it == m_handlers.end()) return false;
@@ -95,7 +93,11 @@ namespace bb
 			void* data;
 			void(*fp)(void*, void*);
 		};
-		
-		std::map<std::tuple<int, size_t, size_t>, fun> m_handlers;
+
+		std::map<std::string, std::map<std::tuple<size_t, size_t>, fun>> m_woah;
+
+		std::map<std::tuple<std::string, size_t, size_t>, fun> m_handlers;
 	};
 }
+
+#define ZAP_EXPORT __attribute__((visibility("default")))
