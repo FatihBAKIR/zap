@@ -61,5 +61,7 @@ int main(int argc, char** argv)
     s.lib = std::move(lib);
     s.reg = &s.lib.get<bb::registrar>("registry");
 
+    std::cerr << "Zap running in port 9993\n";
+    
     io.run();
 }
