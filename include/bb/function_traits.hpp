@@ -56,4 +56,12 @@ namespace zap
     template <class RetT, class...ArgTs>
     struct function_traits<RetT(*)(ArgTs...)>
             : detail::function_traits<RetT(*)(ArgTs...)> {};
+
+    template <class RetT, class...ArgTs>
+    struct function_traits<RetT(ArgTs...)>
+            : detail::function_traits<RetT(*)(ArgTs...)> {};
+
+    template <class RetT, class...ArgTs>
+    struct function_traits<RetT(* const)(ArgTs...)>
+            : detail::function_traits<RetT(*)(ArgTs...)> {};
 }
