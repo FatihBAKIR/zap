@@ -19,7 +19,7 @@
 #include <bb/handler.hpp>
 #include <bb/dynamic.hpp>
 #include <nlohmann/json.hpp>
-#include <bb/json_auth.hpp>
+#include <zap/json_auth.hpp>
 
 using boost::asio::ip::udp;
 
@@ -279,7 +279,6 @@ int main(int argc, char** argv)
         log->info("Configuration has authentication on {}:{}", addr.to_string(), port);
         auth = new rem_auth(io, udp::endpoint(addr, port));
     }
-
 
     std::vector<std::thread> threads(std::thread::hardware_concurrency());
 

@@ -4,7 +4,7 @@
 
 #include <nlohmann/json.hpp>
 #include <bb/auth.hpp>
-#include <bb/json_auth.hpp>
+#include <zap/json_auth.hpp>
 
 namespace bb
 {

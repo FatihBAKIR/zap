@@ -1,7 +1,7 @@
 ﻿#include <iostream>
 
 #include <bb/dynamic.hpp>
-#include <fbs/ip_addr_generated.h>
+#include "ip_addr_generated.h"
 #include <bb/flatbuf.hpp>
 #include <nlohmann/json.hpp>
 

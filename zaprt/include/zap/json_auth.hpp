@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "auth.hpp"
+#include <bb/auth.hpp>
 #include <nlohmann/json_fwd.hpp>
 
 namespace bb

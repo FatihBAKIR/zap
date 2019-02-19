@@ -1,0 +1,5 @@
+add_library (ip_handler SHARED ip_handler.cpp ip_addr_generated.h)
+target_link_libraries(ip_handler PUBLIC zap)
+target_link_libraries(ip_handler PUBLIC CONAN_PKG::flatbuffers)
+set_target_properties(ip_handler PROPERTIES CXX_VISIBILITY_PRESET hidden)
+set_target_properties(ip_handler PROPERTIES C_VISIBILITY_PRESET hidden)
