@@ -3,7 +3,7 @@
 //
 
 #include <jwt/jwt.hpp>
-#include <bb/cloud.hpp>
+#include <bb/auth.hpp>
 
 zap::client_id_t authenticate(const std::string& token)
 {

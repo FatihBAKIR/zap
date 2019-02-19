@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "cloud.hpp"
+#include "auth.hpp"
 #include <spdlog/spdlog.h>
 #include <nlohmann/json_fwd.hpp>
 #include <any>
@@ -32,10 +32,10 @@ namespace zap
     private:
         std::optional<std::string> m_res;
     };
-\
+
     struct call_info
     {
-        client_id_t client;
+        bb::client_id_t client;
         std::shared_ptr<spdlog::logger> log;
         response res;
 

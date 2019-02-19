@@ -4,7 +4,7 @@
 
 #include <flatbuffers/flatbuffers.h>
 #include <vector>
-#include <bb/cloud.hpp>
+#include <bb/auth.hpp>
 
 #include <boost/asio.hpp>
 
