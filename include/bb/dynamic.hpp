@@ -43,6 +43,14 @@ namespace zap
             do_attach(x.tup, std::make_index_sequence<sizeof...(Lst)>{});
         }
 
+        std::vector<std::string> get_handlers() const
+        {
+            std::vector<std::string> res(m_funs.size());
+            std::transform(m_funs.begin(), m_funs.end(), res.begin(), [](auto& x){
+                return x.first;
+            });
+            return res;
+        }
     private:
 
         template <class... Lst, size_t... Is>

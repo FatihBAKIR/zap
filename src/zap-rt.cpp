@@ -110,7 +110,24 @@ public:
     void load_module(std::string_view ns, boost::dll::shared_library&& lib)
     {
         auto [it, ins] = mods.emplace(ns, std::move(lib));
-        if (ins); // do what?
+        auto log = spdlog::get("zap-system");
+        if (ins)
+        {
+            log->info("Namespace \"{}\" loaded", ns);
+            for (auto& handler : it->second.reg->get_handlers())
+            {
+                if (handler != "moddef")
+                {
+                    log->info("Handler added: \"{}.{}\"", std::string(ns), handler);
+                } else {
+                    log->info("Handler added: \"{}\"", std::string(ns));
+                }
+            }
+        }
+        else
+        {
+            log->warn("Namespace {} failed to load!", ns);
+        }
     }
 
     uint16_t get_port() const
@@ -230,6 +247,8 @@ int main(int argc, char** argv)
 {
     using namespace boost;
 
+    auto log = spdlog::stderr_color_mt("zap-system");
+
     asio::io_context io;
 
     server s(io);
@@ -239,21 +258,28 @@ int main(int argc, char** argv)
     auto conf_path = argc > 1 ? argv[1] : env["ZAP_ENTRY"].to_string().c_str();
     std::ifstream conf_file{conf_path};
 
+    log->info("Zap Serverless Dynamic Runtime {}", "0.1.1");
+    log->info("Loading Configuration From \"{}\"", conf_path);
+
     auto conf = nlohmann::json::parse(conf_file);
 
-    dll::shared_library lib(conf["module"].get<std::string>());
-
-    s.load_module(conf["name"], std::move(lib));
+    for (nlohmann::json& mod : conf)
+    {
+        auto object_path = mod["module"].get<std::string>();
+        auto ns = mod["name"].get<std::string>();
+        log->info("Loading module from \"{}\" to namespace \"{}\"", object_path, ns);
+        dll::shared_library lib(object_path);
+        s.load_module(ns, std::move(lib));
+    }
 
     if (conf.find("auth") != conf.end())
     {
         auto addr = boost::asio::ip::make_address(conf["auth"]["host"].get<std::string>());
-        auth = new rem_auth(io, udp::endpoint(addr, conf["auth"]["port"].get<uint16_t>()));
+        auto port = conf["auth"]["port"].get<uint16_t>();
+        log->info("Configuration has authentication on {}:{}", addr.to_string(), port);
+        auth = new rem_auth(io, udp::endpoint(addr, port));
     }
 
-    auto log = spdlog::stderr_color_mt("zap-system");
-
-    log->info("Zap running in port {}", s.get_port());
 
     std::vector<std::thread> threads(std::thread::hardware_concurrency());
 
@@ -264,7 +290,7 @@ int main(int argc, char** argv)
         });
     }
 
-    io.run();
+    log->info("Zap running in port {} with {} threads", s.get_port(), threads.size());
 
     for (auto& t : threads)
     {
