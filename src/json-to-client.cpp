@@ -2,7 +2,7 @@
 // Created by fatih on 2/16/19.
 //
 
-#include <jwt/jwt.hpp>
+#include <nlohmann/json.hpp>
 #include <bb/auth.hpp>
 #include <bb/json_auth.hpp>
 
