@@ -8,7 +8,7 @@
 #include <bb/function_traits.hpp>
 #include "handler.hpp"
 
-namespace bb
+namespace zap
 {
     namespace detail
     {
@@ -27,7 +27,7 @@ namespace bb
 
                     if (ok)
                     {
-                        fn(flatbuffers::GetRoot<FBType>(s.data()), ci);
+                        return fn(flatbuffers::GetRoot<FBType>(s.data()), ci);
                     }
                 };
             }
@@ -39,7 +39,7 @@ namespace bb
                     auto ok = ver.VerifyBuffer<FBType>();
 
                     if (ok) {
-                        fn(flatbuffers::GetRoot<FBType>(s.data()));
+                        return fn(flatbuffers::GetRoot<FBType>(s.data()));
                     }
                 };
             }

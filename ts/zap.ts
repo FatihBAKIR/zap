@@ -42,7 +42,7 @@ export function do_req(buf : Uint8Array) : Promise<any>
         const tmr = setTimeout(() => {
             rej("timeout");
             client.close();
-        }, 2000);
+        }, 5000);
     
         client.send(buf, 9993, "localhost", (err) => {
             if (err)
@@ -56,6 +56,12 @@ export function do_req(buf : Uint8Array) : Promise<any>
     
         client.on("message", (msg, rinfo) => {
             res(JSON.parse(msg.toString("utf8")));
+            clearTimeout(tmr);
+            client.close();
+        });
+
+        client.on("error", (err) => {
+            rej(err);
             clearTimeout(tmr);
             client.close();
         });

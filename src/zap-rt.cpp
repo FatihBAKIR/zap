@@ -1,4 +1,4 @@
-#include <bb/zap.hpp>
+#include <bb/registry.hpp>
 #include <boost/dll.hpp>
 #include <iostream>
 
@@ -8,7 +8,7 @@
 
 #include <boost/asio.hpp>
 
-#include <req_generated.h>
+#include <fbs/req_generated.h>
 
 #include <boost/process.hpp>
 
@@ -17,10 +17,23 @@
 
 #include <thread>
 #include <bb/handler.hpp>
+#include <bb/dynamic.hpp>
 
 using boost::asio::ip::udp;
 
-bb::client_id_t authenticate(const std::string& token);
+zap::client_id_t authenticate(const std::string& token);
+
+struct module_info
+{
+    explicit module_info(boost::dll::shared_library&& l) : lib(std::move(l))
+    {
+        reg = &lib.get<zap::dynamic_registry>("registry");
+    }
+
+    zap::dynamic_registry* reg;
+private:
+    boost::dll::shared_library lib;
+};
 
 class server
 {
@@ -40,9 +53,9 @@ public:
                 {
                     if (!ec && bytes_recvd > 0)
                     {
-                        auto req = flatbuffers::GetRoot<bb::cloud::Request>(data_);
+                        auto req = flatbuffers::GetRoot<zap::cloud::Request>(data_);
                         auto ver = flatbuffers::Verifier(data_, bytes_recvd);
-                        bool ok = bb::cloud::VerifyRequestBuffer(ver);
+                        bool ok = zap::cloud::VerifyRequestBuffer(ver);
 
                         auto remote_addr = ep.address().to_string();
                         auto remote_port = ep.port();
@@ -58,7 +71,7 @@ public:
 
                         auto token = req->token()->str();
 
-                        auto handler = req->handler()->c_str();
+                        auto handler = req->handler()->str();
 
                         req_log->info(
                                 "Got request on \"{}\" with body size {} from {}:{}",
@@ -70,11 +83,25 @@ public:
 
                             auto fun_log = spdlog::get(handler);
 
-                            bb::call_info ci;
+                            zap::call_info ci;
                             ci.client = id;
                             ci.log = fun_log ? fun_log : spdlog::stdout_color_mt(handler);
 
-                            auto res = reg->post(handler, body, ci);
+                            auto dot_pos = handler.find('.');
+
+                            auto ns = handler;
+                            if (dot_pos != handler.npos)
+                            {
+                                ns = handler.substr(0, dot_pos);
+                                handler = handler.substr(dot_pos + 1);
+                            }
+                            else
+                            {
+                                handler.clear();
+                            }
+
+                            auto reg = mods.find(ns)->second.reg;
+                            auto res = handler.empty() ? reg->post(body, ci) : reg->post(handler.c_str(), body, ci);
 
                             if (!res)
                             {
@@ -96,13 +123,14 @@ public:
                             req_log->error("Handling failed: {}", err.what());
                         }
                     }
+
                     end:
                     do_receive();
                 });
     }
 
-    boost::dll::shared_library lib;
-    bb::registrar* reg;
+    std::unordered_map<std::string, module_info> mods;
+
 private:
     udp::socket socket_;
     enum { max_length = 1024 };
@@ -119,10 +147,10 @@ int main(int argc, char** argv)
     server s(io, 9993);
 
     auto env = boost::this_process::environment();
+
     dll::shared_library lib(argc > 1 ? argv[1] : env["ZAP_ENTRY"].to_string().c_str());
 
-    s.lib = std::move(lib);
-    s.reg = &s.lib.get<bb::registrar>("registry");
+    s.mods.emplace("handle_ip", std::move(lib));
 
     auto log = spdlog::stderr_color_mt("zap-system");
 

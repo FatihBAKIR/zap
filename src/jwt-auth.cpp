@@ -5,7 +5,7 @@
 #include <jwt/jwt.hpp>
 #include <bb/cloud.hpp>
 
-bb::client_id_t authenticate(const std::string& token)
+zap::client_id_t authenticate(const std::string& token)
 {
     using namespace jwt::params;
 
@@ -17,10 +17,10 @@ bb::client_id_t authenticate(const std::string& token)
     {
         case 0:
             //user
-            return bb::user_id_t{ json["obj"].get<uint32_t>() };
+            return zap::user_id_t{ json["obj"].get<uint32_t>() };
         case 1:
             // gateway
-            bb::org_id_t org{ json["obj"]["owner"].get<uint32_t>() };
-            return bb::device_id_t { org, json["obj"]["gw"].get<uint32_t>() };
+            zap::org_id_t org{ json["obj"]["owner"].get<uint32_t>() };
+            return zap::device_id_t { org, json["obj"]["gw"].get<uint32_t>() };
     }
 }

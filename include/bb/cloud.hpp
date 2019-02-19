@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <variant>
 
-namespace bb
+namespace zap
 {
 	struct user_id_t
 	{

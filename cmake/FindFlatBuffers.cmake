@@ -25,6 +25,8 @@
 #   Returns the header files in ${Name}_OUTPUTS
 
 find_program(FLATBUFFERS_FLATC_EXECUTABLE NAMES flatc)
+set (${FLATBUFFERS_FLATC_EXECUTABLE} /usr/local/bin/flatc)
+message(STATUS ${FLATBUFFERS_FLATC_EXECUTABLE})
 find_path(FLATBUFFERS_INCLUDE_DIR NAMES flatbuffers/flatbuffers.h)
 
 include(FindPackageHandleStandardArgs)

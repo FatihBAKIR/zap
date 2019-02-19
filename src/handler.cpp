@@ -6,9 +6,9 @@
 #include <nlohmann/json.hpp>
 #include <sstream>
 
-namespace bb
+namespace zap
 {
-    ZAP_EXPORT void response::set(const nlohmann::json &j) {
+    ZAP_PUBLIC void response::set(const nlohmann::json &j) {
         std::ostringstream oss;
         oss << j;
         m_res = oss.str();
