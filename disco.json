@@ -1,6 +1,9 @@
 {
-  "modules": [{
-    "name": "disco",
-    "module": "lib/libdisco.so"
-  }]
+  "modules": [
+    {
+      "name": "disco",
+      "module": "lib/libdisco.so"
+    }
+  ],
+  "prefer-port": 9993
 }
