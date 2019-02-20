@@ -1,11 +1,7 @@
 #include <bb/registry.hpp>
-#include <boost/dll.hpp>
 #include <iostream>
 
-#include <flatbuffers/flatbuffers.h>
 #include <vector>
-#include <bb/auth.hpp>
-
 #include <boost/asio.hpp>
 
 #include <fbs/req_generated.h>
@@ -20,88 +16,19 @@
 #include <bb/dynamic.hpp>
 #include <nlohmann/json.hpp>
 #include <zap/json_auth.hpp>
+#include "iauth.hpp"
+#include "module_info.hpp"
+#include "rem_auth.hpp"
 
 using boost::asio::ip::udp;
 
-struct module_info
-{
-    explicit module_info(boost::dll::shared_library&& l) : lib(std::move(l))
-    {
-        reg = &lib.get<zap::dynamic_registry>("registry");
-    }
-
-    zap::dynamic_registry* reg;
-private:
-    boost::dll::shared_library lib;
-};
-
-struct iauth
-{
-    virtual bb::client_id_t authenticate(const std::string&) = 0;
-    virtual ~iauth() = default;
-};
-
-struct rem_auth : iauth
-{
-    bb::client_id_t authenticate(const std::string &string) override {
-        flatbuffers::FlatBufferBuilder builder(256);
-        auto tok_off = builder.CreateString("");
-        auto body_off = builder.CreateVector<uint8_t>((const uint8_t *)string.data(), string.size());
-        auto handler_off = builder.CreateString("auth");
-        auto req = zap::cloud::CreateRequest(builder, tok_off, handler_off, body_off);
-        builder.Finish(req);
-
-        std::array<uint8_t, 512> buf;
-        auto r = sock.send_to(boost::asio::buffer(builder.GetBufferPointer(), builder.GetSize()), ep);
-        udp::endpoint e;
-
-        boost::system::error_code ec;
-        auto len = sock.receive_from(boost::asio::buffer(buf), e, 0, ec);
-
-        if (len == 0 || ec || e != ep)
-        {
-            return {};
-        }
-
-        if (buf[0] != '{')
-        {
-            return {};
-        }
-
-        auto j = nlohmann::json::parse(buf.data(), buf.data() + len);
-        return bb::deserialize(j);
-    }
-
-    rem_auth(boost::asio::io_context& ioc, const udp::endpoint& e) : sock(ioc), ep(e) {
-        sock.open(udp::v4());
-    }
-
-private:
-    udp::socket sock;
-    udp::endpoint ep;
-};
-
-struct null_authenticator : iauth
-{
-    bb::client_id_t authenticate(const std::string &string) override {
-        return {};
-    }
-};
-
-iauth* auth = new null_authenticator;
+auto auth = zap::make_null_auth();
 
 class server
 {
 public:
     server(boost::asio::io_context& io_context)
             : socket_(io_context, udp::endpoint(udp::v4(), 0))
-    {
-        auto req_log = spdlog::stderr_color_mt("req-log");
-        do_receive();
-    }
-
-    server(boost::asio::io_context& io_context, uint16_t port)
-            : socket_(io_context, udp::endpoint(udp::v4(), port))
     {
         auto req_log = spdlog::stderr_color_mt("req-log");
         do_receive();
@@ -235,7 +162,7 @@ private:
                 });
     }
 
-    std::unordered_map<std::string, module_info> mods;
+    std::unordered_map<std::string, zap::module_info> mods;
 
     udp::socket socket_;
     enum { max_length = 1024 };
@@ -277,7 +204,7 @@ int main(int argc, char** argv)
         auto addr = boost::asio::ip::make_address(conf["auth"]["host"].get<std::string>());
         auto port = conf["auth"]["port"].get<uint16_t>();
         log->info("Configuration has authentication on {}:{}", addr.to_string(), port);
-        auth = new rem_auth(io, udp::endpoint(addr, port));
+        auth = zap::make_remote_auth(io, udp::endpoint(addr, port));
     }
 
     std::vector<std::thread> threads(std::thread::hardware_concurrency());
