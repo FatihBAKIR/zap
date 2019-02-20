@@ -16,7 +16,7 @@ struct end_point
 
 struct reg_info
 {
-    std::string mod_name;
+    std::vector<std::string> namespaces;
     end_point ep;
 };
 
@@ -29,11 +29,14 @@ std::map<std::string, std::vector<registered_info>> x;
 
 void reg(const reg_info& info, zap::call_info& ci)
 {
-    ci.log->info("Registering module {} at {}:{}", info.mod_name, info.ep.host, info.ep.port);
-
-    if (x.find(info.mod_name) == x.end())
+    for (auto& mod_name : info.namespaces)
     {
-        x[info.mod_name].push_back(registered_info{ info.ep });
+        ci.log->info("Registering module {} at {}:{}", mod_name, info.ep.host, info.ep.port);
+
+        if (x.find(mod_name) == x.end())
+        {
+            x[mod_name].push_back(registered_info{ info.ep });
+        }
     }
 }
 
@@ -56,7 +59,10 @@ void deser_json(const nlohmann::json& info, zap::call_info& ci)
     ep.host = info["host"];
     reg_info inf;
     inf.ep = ep;
-    inf.mod_name = info["mod"];
+    for (auto& ns : info["mods"])
+    {
+        inf.namespaces.emplace_back(std::string(ns));
+    }
     reg(inf, ci);
 }
 

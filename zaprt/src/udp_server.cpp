@@ -29,12 +29,14 @@ namespace zap
         void handle_receive(boost::system::error_code ec, std::size_t bytes_recvd);
         void do_receive();
 
-        impl(boost::asio::io_context& io) :
-            socket_(io, udp::endpoint(udp::v4(), 0))
+        impl(boost::asio::io_context& io, uint16_t port) :
+                socket_(io, udp::endpoint(udp::v4(), port))
         {
             auto req_log = spdlog::stderr_color_mt("req-log");
             do_receive();
         }
+
+        impl(boost::asio::io_context& io) : impl(io, 0) {}
     };
 
     void udp_server::impl::handle_packet
@@ -42,8 +44,6 @@ namespace zap
     {
         auto ver = flatbuffers::Verifier(packet.data(), packet.size());
         bool ok = zap::cloud::VerifyRequestBuffer(ver);
-
-        auto req = flatbuffers::GetRoot<zap::cloud::Request>(packet.data());
 
         auto remote_addr = from.address().to_string();
         auto remote_port = from.port();
@@ -54,6 +54,8 @@ namespace zap
             req_log->error("Received garbage from {}:{}", remote_addr, remote_port);
             return;
         }
+
+        auto req = flatbuffers::GetRoot<zap::cloud::Request>(packet.data());
 
         auto body = tos::span<const uint8_t>(req->body()->data(), req->body()->size());
 
@@ -164,11 +166,13 @@ namespace zap
         }
     }
 
-    udp_server::udp_server(boost::asio::io_context &io_context)
-        : m_impl(std::make_unique<impl>(io_context))
+    udp_server::udp_server(boost::asio::io_context &io_context, uint16_t port)
+            : m_impl(std::make_unique<impl>(io_context, port))
     {
         m_impl->auth = make_null_auth();
     }
+
+    udp_server::udp_server(boost::asio::io_context &io_context) : udp_server(io_context, 0) {}
 
     uint16_t udp_server::get_port() const
     {
