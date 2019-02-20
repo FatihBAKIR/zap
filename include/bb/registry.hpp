@@ -29,9 +29,21 @@ namespace zap
     namespace detail
     {
         template <class X, class Y>
+        constexpr registry<handler<X, Y>> export_(const handler<X, Y>& single)
+        {
+            return registry(std::move(single));
+        }
+
+        template <class X, class Y>
         constexpr registry<handler<X, Y>> export_(handler<X, Y>&& single)
         {
             return registry(std::move(single));
+        }
+
+        template <class... Lst>
+        constexpr registry<Lst...> export_(const registry<Lst...>& reg)
+        {
+            return reg;
         }
 
         template <class... Lst>

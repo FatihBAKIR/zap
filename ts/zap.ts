@@ -2,6 +2,7 @@ import { bb } from "./ip_addr_generated";
 import { bb as req} from "./req_generated";
 import {flatbuffers} from "flatbuffers";
 import * as dgram from "dgram";
+import {TextEncoder} from "util";
 
 export function make_ip(gw_id: number, addr: string) : Uint8Array
 {
@@ -15,6 +16,12 @@ export function make_ip(gw_id: number, addr: string) : Uint8Array
     builder.finish(addr_off);
     
     return builder.asUint8Array();
+}
+
+export function make_request_string(handler: string, token: string, body: string) : Uint8Array
+{
+    const buf = new TextEncoder().encode(body);
+    return make_request(handler, token, buf);
 }
 
 export function make_request(handler: string, token: string, body: Uint8Array) : Uint8Array
@@ -34,7 +41,7 @@ export function make_request(handler: string, token: string, body: Uint8Array) :
     return builder.asUint8Array();
 }
 
-export function do_req(buf : Uint8Array) : Promise<any>
+export function do_req(buf : Uint8Array, port: number) : Promise<any>
 {
     return new Promise<any>((res, rej) => {
         const client = dgram.createSocket('udp4');
@@ -44,7 +51,7 @@ export function do_req(buf : Uint8Array) : Promise<any>
             client.close();
         }, 5000);
     
-        client.send(buf, 9993, "localhost", (err) => {
+        client.send(buf, port, "localhost", (err) => {
             if (err)
             {
                 clearTimeout(tmr);

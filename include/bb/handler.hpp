@@ -15,6 +15,11 @@ namespace zap
 {
     struct response
     {
+        void set(const char* r)
+        {
+            m_res = r;
+        }
+
         void set(std::string r)
         {
             m_res = r;

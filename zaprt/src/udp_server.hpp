@@ -12,7 +12,8 @@ namespace zap
 {
     class udp_server
     {
-        udp_server(boost::asio::io_context& io_context);
+    public:
+        explicit udp_server(boost::asio::io_context& io_context);
 
         void set_auth(std::unique_ptr<iauth> auth);
 

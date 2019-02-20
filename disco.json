@@ -1,0 +1,6 @@
+{
+  "modules": [{
+    "name": "disco",
+    "module": "lib/libdisco.so"
+  }]
+}

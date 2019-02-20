@@ -28,6 +28,13 @@ namespace zap
 
         void handle_receive(boost::system::error_code ec, std::size_t bytes_recvd);
         void do_receive();
+
+        impl(boost::asio::io_context& io) :
+            socket_(io, udp::endpoint(udp::v4(), 0))
+        {
+            auto req_log = spdlog::stderr_color_mt("req-log");
+            do_receive();
+        }
     };
 
     void udp_server::impl::handle_packet
@@ -129,6 +136,38 @@ namespace zap
         }
 
         do_receive();
+    }
+
+    void udp_server::set_auth(std::unique_ptr<iauth> auth) {
+        m_impl->auth = std::move(auth);
+    }
+
+    void udp_server::load_module(std::string_view ns, boost::dll::shared_library &&lib) {
+        auto [it, ins] = m_impl->mods.emplace(ns, std::move(lib));
+        auto log = spdlog::get("zap-system");
+        if (ins)
+        {
+            log->info("Namespace \"{}\" loaded", ns);
+            for (auto& handler : it->second.reg->get_handlers())
+            {
+                if (handler != "moddef")
+                {
+                    log->info("Handler added: \"{}.{}\"", std::string(ns), handler);
+                } else {
+                    log->info("Handler added: \"{}\"", std::string(ns));
+                }
+            }
+        }
+        else
+        {
+            log->warn("Namespace {} failed to load!", ns);
+        }
+    }
+
+    udp_server::udp_server(boost::asio::io_context &io_context)
+        : m_impl(std::make_unique<impl>(io_context))
+    {
+        m_impl->auth = make_null_auth();
     }
 
     uint16_t udp_server::get_port() const
