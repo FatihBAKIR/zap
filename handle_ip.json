@@ -1,8 +1,12 @@
 {
-  "name": "handle_ip",
-  "module": "lib/libip_handler.so",
+  "modules": [
+    {
+      "name": "handle_ip",
+      "module": "lib/libip_handler.so"
+    }
+  ],
   "auth": {
     "host": "127.0.0.1",
-    "port": 42561
+    "port": 9994
   }
 }
